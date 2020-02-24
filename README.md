@@ -1,6 +1,7 @@
 # JumpGameSBC
 
 Projeto desenvolvido para o problema 2 do MI - Sistemas Digitais
+
 Driver LCD16x2 utilizado: https://github.com/phanvandiem/LCD16x2_Driver
 
 Funções:
