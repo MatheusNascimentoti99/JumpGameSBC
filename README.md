@@ -6,7 +6,7 @@ Driver LCD16x2 utilizado: https://github.com/phanvandiem/LCD16x2_Driver
 
 Funções:
 
-write(char letra) - É utilizado o R9 como parâmetro. Sempre que chamar essa função deve-se atribuir a R9 o valor que deseja-se imprimir no LCD
+write(char letra) - É utilizado o R9 como parâmetro. Sempre que chamar essa função deve-se atribuir a R9 o valor que deseja imprimir no LCD
 
 clear(void) - Limpa a display
 
