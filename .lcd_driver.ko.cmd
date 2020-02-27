@@ -1,0 +1,1 @@
+cmd_/home/pi/Documents/JumpGameSBC/lcd_driver.ko := ld -r  -EL -T ./scripts/module-common.lds -T ./arch/arm/kernel/module.lds  --build-id  -o /home/pi/Documents/JumpGameSBC/lcd_driver.ko /home/pi/Documents/JumpGameSBC/lcd_driver.o /home/pi/Documents/JumpGameSBC/lcd_driver.mod.o ;  true
