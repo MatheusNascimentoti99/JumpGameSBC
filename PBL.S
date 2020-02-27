@@ -3,7 +3,7 @@
 @R7 Syscall
 @R0 Retorno Syscall
 @R1 Parâmetro Syscall
-@R2 PArâmetro Syscall
+@R2 PArâmetro Syscal
 @R12 Valor de score
 .data
 
