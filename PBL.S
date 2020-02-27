@@ -6,7 +6,7 @@
 @R2 PArâmetro Syscal
 @R12 Valor de score
 .data
-
+    
     zero: .ascii "0"
     um: .ascii "1"
     dois: .ascii "2"
@@ -17,6 +17,17 @@
     sete: .ascii "7"
     oito: .ascii "8"
     nove: .ascii "9"
+    baseNumbers:
+        .word zero
+        .word um
+        .word dois
+        .word tres
+        .word quatro
+        .word cinco
+        .word seis
+        .word sete 
+        .word oito 
+        .word nove 
     filepath: .asciz "/dev/lcd_1602"
     r: .ascii "r"
     a: .ascii "a"
@@ -45,19 +56,24 @@
 .global main
 
 main:
-
-    LDR r11,=count
+    MOV R12,#0
     BL clear
+    B game
+
+game: 
+    LDR r11,=count
     BL uni
+    B gameplay
     LDR R1,=i
     MOV R7, #4
     MOV R0, #1
     MOV R2, #12
     SWI 0
-    B main
+    B game
+    
 gameplay:
-	ADD R13, R13, #1
-    	BL set_position_DOWN
+	ADD R12, R12, #1
+    BL set_position_DOWN
 	LDR R10, =cenario
 	MOV R3,#16
 	B moveCen
@@ -114,7 +130,7 @@ delay:
 	CMP r11, #0
 	BNE delay
 	LDR r11,=count
-	B gameplay
+	B game
 	
 	
 end:
@@ -241,7 +257,7 @@ home_title:
     
 scoreDec_Uni:
 
-	CMP R13, #9
+	CMP R12, #9
 	BLE uni
 
 	BX LR
@@ -249,36 +265,37 @@ scoreDec_Uni:
 
 uni:
 	SUB sp, sp, #8
-    	STR LR, [sp]
+    STR LR, [sp]
 	BL set_position_UP
 	LDR R9,=esp
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	LDR R9,=adress_zero
-	LDR R9, [R9,#56] 
+	BL setColl16
+	LDR R9,=baseNumbers
+	LSL R1, R12, #2
+	ADD R9, R9, R1
+	LDR R9, [r9,#0]
 	BL write
 	LDR LR,[sp]
 	ADD sp, sp, #8
-	LDR R1,[r9]
-    	
-	MOV R7, #4
-    	MOV R0, #1
-    	MOV R2, #12
-    	SWI 0
-	B end
+	BX LR
 
-adress_zero:
-	.word zero
+setColl16:
+    SUB sp, sp, #8
+    STR LR, [sp]
+    BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	LDR LR,[sp]
+	ADD sp, sp, #8
+	BX LR
