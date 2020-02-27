@@ -1,6 +1,22 @@
+@R9 Utilizado para parâmetro de caractere
+@R11 Contador do delay
+@R7 Syscall
+@R0 Retorno Syscall
+@R1 Parâmetro Syscall
+@R2 PArâmetro Syscall
+@R12 Valor de score
 .data
 
-    
+    zero: .ascii "0"
+    um: .ascii "1"
+    dois: .ascii "2"
+    tres: .ascii "3"
+    quatro: .ascii "4"
+    cinco: .ascii "5"
+    seis: .ascii "6"
+    sete: .ascii "7"
+    oito: .ascii "8"
+    nove: .ascii "9"
     filepath: .asciz "/dev/lcd_1602"
     r: .ascii "r"
     a: .ascii "a"
@@ -12,33 +28,36 @@
     c: .ascii "c"
     n: .ascii "n"
     P: .ascii "P"
+    
     person: .ascii "¥"
     bloco: .ascii "#"
     excl: .ascii "!"
     esp: .ascii " "
-    
-    @my struct
     .align 4
     x: .word 2
     y: .word 1
+    
     cenario: .word 0,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1 
     .equ count, 80000000
+
 
 .text
 .global main
 
 main:
+
     LDR r11,=count
     BL clear
-    BL gameplay
+    BL uni
     LDR R1,=i
     MOV R7, #4
     MOV R0, #1
     MOV R2, #12
     SWI 0
-    B end
+    B main
 gameplay:
-    BL set_position_DOWN
+	ADD R13, R13, #1
+    	BL set_position_DOWN
 	LDR R10, =cenario
 	MOV R3,#16
 	B moveCen
@@ -137,7 +156,9 @@ set_position_UP:
     LDR LR, [sp]
     ADD sp, sp, #8
     BX LR
+
     
+
 open:
     MOV R7, #5                  @ função open
     LDR R0, =filepath          @ file pointer 
@@ -148,11 +169,12 @@ open:
 
 close: 
     
-    MOV R0, R9
     MOV R7, #6
     SWI 0               @Close
     BX LR
     
+
+
 clear:
     SUB sp, sp, #8
     STR LR, [sp]
@@ -217,3 +239,46 @@ home_title:
     ADD sp, sp, #8
     BX LR
     
+scoreDec_Uni:
+
+	CMP R13, #9
+	BLE uni
+
+	BX LR
+	
+
+uni:
+	SUB sp, sp, #8
+    	STR LR, [sp]
+	BL set_position_UP
+	LDR R9,=esp
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	LDR R9,=adress_zero
+	LDR R9, [R9,#56] 
+	BL write
+	LDR LR,[sp]
+	ADD sp, sp, #8
+	LDR R1,[r9]
+    	
+	MOV R7, #4
+    	MOV R0, #1
+    	MOV R2, #12
+    	SWI 0
+	B end
+
+adress_zero:
+	.word zero
