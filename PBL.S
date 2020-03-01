@@ -8,6 +8,7 @@
 @R2 PArâmetro Syscal
 @R12 Valor de score
 @R8  Valor da centena do score
+@R5 simboliza o personagem em cima
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .data
     
@@ -44,6 +45,7 @@
     n: .ascii "n"
     P: .ascii "P"
     
+    
     person: .ascii "¥"
     bloco: .ascii "#"
     excl: .ascii "!"
@@ -60,6 +62,7 @@
 .global main
 
 main:
+    LDR R5,=esp
     LDR R4,=count
     MOV R12,#0
     MOV R8,#0
@@ -69,12 +72,11 @@ main:
 game: 
     LDR R1,=countDecres
     SUB R11, R4, R1    
-    BL score
-    B gameplay
+    B movingPerson
     
 gameplay:
 	ADD R12, R12, #1
-    BL set_position_DOWN
+    	@BL set_position_DOWN
 	LDR R10, =cenario
 	MOV R3,#16
 	B moveCen
@@ -82,7 +84,7 @@ gameplay:
 moveCen:
 	CMP R3, #0
 	BEQ movingOn
-	LDR R6, [R10, #0]
+	LDR R6, [R10, #4]	@Botar #4 aqui
 	CMP R6, #0
 	BEQ adsEsp         	@ Se for 0 escreve espaço
 	B adsBlo
@@ -492,10 +494,11 @@ printHund:
 
 setColl14:
     SUB sp, sp, #8
-    STR LR, [sp]
-    LDR R9,=esp
+    STR LR, [sp]  
     BL set_position_UP
+	MOV R9,R5	
 	BL write
+	LDR R9,=esp
 	BL write
 	BL write
 	BL write
@@ -511,3 +514,58 @@ setColl14:
 	LDR LR,[sp]
 	ADD sp, sp, #8
 	BX LR
+
+@ Máquina de estados para verificar a colisão e movimentação do personagem
+
+movingPerson:
+	BL score
+	LDR R10,=cenario
+	MOV R6,#1 		@LDR R6,=buttonPulo 	@Seria o botão de pulo adicionar buttonPulo no data, mas está sendo simulado e sem tratamento caso continue pressionado
+	CMP R6,#1
+	BEQ buttonUp
+	CMP R6,#0
+	BEQ buttonDown
+	B movingPerson						
+
+buttonDown:
+	LDR R1,=person		@R5 é o personagem
+	CMP R1, R5		@Verifica se o jogador está em cima do bloco
+	BEQ inUp				
+	LDR R1, [R10, #4]
+	CMP R1, #1		@Verifica se o próximo elemento do cenário é um bloco
+	BEQ collider		
+	B moveDown		@Se nenhuma das situações acontecerem, então ele se mantém na parte de baixo
+
+buttonUp:	
+	LDR R1,=person		@R5 é o personagem
+	CMP R1, R5		@Verifica se o jogador está em cima do bloco
+	BEQ inUp
+	B moveUp		@Caso ele não esteja na parte de cima, então será realizada a ação de pular
+
+moveUp:
+	BL set_position_UP
+	LDR R5,=person
+	LDR R9,=person		@Move o personagem de cima
+	BL write
+	BL set_position_DOWN	@Deixa o cursor na linha de baixo novamente
+	B gameplay
+
+moveDown:
+	BL set_position_UP
+	LDR R5,=esp
+	LDR R9,=esp		@Apaga o personagem de cima
+	BL write
+	
+	BL set_position_DOWN
+	LDR R9,=person
+	BL write		@Move o personagem para baixo
+	B gameplay
+
+inUp:
+	LDR R1, [R10, #4]
+	CMP R1, #0		@e o próximo elemento do cenario for um espaço, então o personagem vai descer do bloco
+	BEQ moveDown
+	B moveUp		@Caso contrário, então ele continua na parte de cima
+
+collider:
+	B end		@Reinicia o jogo
