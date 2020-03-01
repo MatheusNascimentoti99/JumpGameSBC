@@ -57,7 +57,9 @@
     cenario: .word 0,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1 
     .equ count, 10000000            @contador do delay
     .equ countDecres, 1057172
-
+.bss
+	pulo:	.space	1
+	pausa:	.space	1
 .text
 .global main
 
@@ -71,8 +73,21 @@ main:
 
 game: 
     LDR R1,=countDecres
-    SUB R11, R4, R1    
+    SUB R11, R4, R1  
     B movingPerson
+
+pausar:
+	MOV R7, #3              @ função read
+    	mov R0, #2	        @set to read from std in
+	LDR R1,=pausa            @onde o dado será guardado
+	MOV R2, #1              @tamanho da palavra que receberá
+	SWI 0
+	LDR R6,=pausa 	 	@O botão pulo sendo pego canonicamente
+	CMP R6,#0x70		@Tecla de pausa = p
+	MOV R1, #0
+	STR R1, [R6,#0]
+	BEQ pausar
+	B game
     
 gameplay:
 	ADD R12, R12, #1
@@ -132,7 +147,7 @@ delay:
 	SUB R11, R11, #1
 	CMP R11, #0
 	BNE delay
-	B game
+	B pausar
 	
 	
 end:
@@ -520,11 +535,13 @@ setColl14:
 movingPerson:
 	BL score
 	LDR R10,=cenario
-	MOV R6,#1 		@LDR R6,=buttonPulo 	@Seria o botão de pulo adicionar buttonPulo no data, mas está sendo simulado e sem tratamento caso continue pressionado
-	CMP R6,#1
+	BL pulou	
+	LDR R6,=pulo 	 	@O botão pulo sendo pego canonicamente
+	CMP R6,#0x20		@a tecla space = pular
+	MOV R2, #0
+	STR R2, [R1,#0]		@para zerar o pulo e ter como pegar a proxima entrada
 	BEQ buttonUp
-	CMP R6,#0
-	BEQ buttonDown
+	BNE buttonDown
 	B movingPerson						
 
 buttonDown:
@@ -569,3 +586,10 @@ inUp:
 
 collider:
 	B end		@Reinicia o jogo
+pulou:
+	MOV R7, #3              @ função read
+    	mov R0, #2	        @set to read from std in
+	LDR R1,=pulo            @onde o dado será guardado
+	MOV R2, #1              @tamanho da palavra que receberá
+	SWI 0	
+	BX LR
