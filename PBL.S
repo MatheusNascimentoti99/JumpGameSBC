@@ -45,7 +45,8 @@
     n: .ascii "n"
     P: .ascii "P"
     
-    
+    pausa: .word 1  @dados fictício para simbolizar as posições de memória 
+    pulo: .word 1
     person: .ascii "¥"
     bloco: .ascii "#"
     excl: .ascii "!"
@@ -57,9 +58,7 @@
     cenario: .word 0,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1 
     .equ count, 10000000            @contador do delay
     .equ countDecres, 1057172
-.bss
-	pulo:	.space	1
-	pausa:	.space	1
+
 .text
 .global main
 
@@ -77,15 +76,8 @@ game:
     B movingPerson
 
 pausar:
-	MOV R7, #3              @ função read
-    	mov R0, #2	        @set to read from std in
-	LDR R1,=pausa            @onde o dado será guardado
-	MOV R2, #1              @tamanho da palavra que receberá
-	SWI 0
-	LDR R6,=pausa 	 	@O botão pulo sendo pego canonicamente
-	CMP R6,#0x70		@Tecla de pausa = p
-	MOV R1, #0
-	STR R1, [R6,#0]
+	LDR R6,=pausa	
+	CMP R6,#1
 	BEQ pausar
 	B game
     
@@ -534,12 +526,9 @@ setColl14:
 
 movingPerson:
 	BL score
-	LDR R10,=cenario
-	BL pulou	
-	LDR R6,=pulo 	 	@O botão pulo sendo pego canonicamente
-	CMP R6,#0x20		@a tecla space = pular
-	MOV R2, #0
-	STR R2, [R1,#0]		@para zerar o pulo e ter como pegar a proxima entrada
+	LDR R10,=cenario	
+	LDR R6,=pulo 	 	@O botão pulo sendo pego direto na memoria
+	CMP R6,#1
 	BEQ buttonUp
 	BNE buttonDown
 	B movingPerson						
@@ -586,10 +575,4 @@ inUp:
 
 collider:
 	B end		@Reinicia o jogo
-pulou:
-	MOV R7, #3              @ função read
-    	mov R0, #2	        @set to read from std in
-	LDR R1,=pulo            @onde o dado será guardado
-	MOV R2, #1              @tamanho da palavra que receberá
-	SWI 0	
-	BX LR
+
