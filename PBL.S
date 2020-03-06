@@ -12,6 +12,39 @@
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .data
     
+@ button32.s
+@ Decrements a counter as a button connected to pin 17 is pressed.
+@ Prints the value of the counter on the screen till it reaches 0.
+
+@ Define my Raspberry Pi
+        .cpu    cortex-a53
+        .fpu    neon-fp-armv8
+        .syntax unified         		@ modern syntax
+
+@ Constants for assembler
+        .equ    PERIPH,0x3f000000   		@ RPi 2 & 3 peripherals
+        .equ    GPIO_OFFSET,0x200000  		@ start of GPIO device
+@ The following are defined in /usr/include/asm-generic/fcntl.h:
+@ Note that the values are specified in octal.
+        .equ    O_RDWR,00000002   		@ open for read/write
+        .equ    O_DSYNC,00010000
+        .equ    __O_SYNC,04000000
+        .equ    O_SYNC,__O_SYNC|O_DSYNC
+
+@ The following are defined in /usr/include/asm-generic/mman-common.h:
+        .equ    PROT_READ,0x1   		@ page can be read
+        .equ    PROT_WRITE,0x2  		@ page can be written
+        .equ    MAP_SHARED,0x01 		@ share changes
+
+@ The following are defined by me:
+        .equ    O_FLAGS,O_RDWR|O_SYNC 	@ open file flags
+        .equ    PROT_RDWR,PROT_READ|PROT_WRITE
+        .equ    NO_PREF,0
+        .equ    PAGE_SIZE,4096  		@ Raspbian memory page
+        .equ    INPUT,0         		@ use pin for input
+        .equ    OUTPUT,1        		@ use pin for ouput
+        .equ    PIN_BTN,17        		@ button pin
+        
     zero: .ascii "0"
     um: .ascii "1"
     dois: .ascii "2"
@@ -57,26 +90,53 @@
     cenario: .word 0,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1 
     .equ count, 10000000            @contador do delay
     .equ countDecres, 1057172
-
+    @ Constant program data
+        .section .rodata
+        .align  2
+    device:
+        .asciz  "/dev/gpiomem"
 .text
-.global main
-
+    .align  2
+    .global main
+    .type   main, %function
 main:
+    BL clear
+    Bl home_title
+    b home
+
+home:
     LDR R5,=esp
     LDR R4,=count
     MOV R12,#0
     MOV R8,#0
-    BL clear
+    LDR R0,=count 
+    BL dbounce
+    LDR R9,=PIN_BTN
+    BL readButton
+    CMP R9, #1
+    BNE home
+    BL dbounce
     B game
-
-game: 
-    LDR R1,=countDecres
-    SUB R11, R4, R1    
+    
+dbounce:
+    PUSH {LR}
+    B wait
+wait:
+    SUB R0, R0, #1
+    CMP R0, #0
+    BGT wait
+    POP {lr}
+    BX lr
+    
+clearTest:
+    bl clear
+    b end
+    
+game:
+    LDR R11,=count
     B movingPerson
     
 gameplay:
-	ADD R12, R12, #1
-    	@BL set_position_DOWN
 	LDR R10, =cenario
 	MOV R3,#16
 	B moveCen
@@ -84,8 +144,8 @@ gameplay:
 moveCen:
 	CMP R3, #0
 	BEQ movingOn
-	LDR R6, [R10, #4]	@Botar #4 aqui
-	CMP R6, #0
+	LDR R1, [R10, #4]	@Botar #4 aqui
+	CMP R1, #0
 	BEQ adsEsp         	@ Se for 0 escreve espaço
 	B adsBlo
 
@@ -116,10 +176,10 @@ moving:
     B moving
 
 swap:								@ Ele troca a primeira posição para a segunda posição
-    LDR R6, [R10, #0]
+    LDR R1, [R10, #0]
     LDR R7, [R10, #4]
     STR R7, [R10, #0]
-    STR R6, [R10, #4]
+    STR R1, [R10, #4]
     SUB R3, R3, #1
     LDR R1,=i
     MOV R7, #4
@@ -188,7 +248,6 @@ open:
     BX LR
 
 close: 
-    
     MOV R7, #6
     SWI 0               @Close
     BX LR
@@ -506,11 +565,6 @@ setColl14:
 	BL write
 	BL write
 	BL write
-	BL write
-	BL write
-	BL write
-	BL write
-	BL write
 	LDR LR,[sp]
 	ADD sp, sp, #8
 	BX LR
@@ -518,20 +572,20 @@ setColl14:
 @ Máquina de estados para verificar a colisão e movimentação do personagem
 
 movingPerson:
-	BL score
+    BL score
+    ADD R12, R12, #1
+    LDR R9,=PIN_BTN
+	BL readButton
 	LDR R10,=cenario
-	MOV R6,#1 		@LDR R6,=buttonPulo 	@Seria o botão de pulo adicionar buttonPulo no data, mas está sendo simulado e sem tratamento caso continue pressionado
-	CMP R6,#1
+	CMP R0,#1
 	BEQ buttonUp
-	CMP R6,#0
-	BEQ buttonDown
-	B movingPerson						
+	B buttonDown					
 
 buttonDown:
 	LDR R1,=person		@R5 é o personagem
 	CMP R1, R5		@Verifica se o jogador está em cima do bloco
 	BEQ inUp				
-	LDR R1, [R10, #4]
+	LDR R1, [R10, #0]
 	CMP R1, #1		@Verifica se o próximo elemento do cenário é um bloco
 	BEQ collider		
 	B moveDown		@Se nenhuma das situações acontecerem, então ele se mantém na parte de baixo
@@ -568,4 +622,59 @@ inUp:
 	B moveUp		@Caso contrário, então ele continua na parte de cima
 
 collider:
-	B end		@Reinicia o jogo
+	B main		@Reinicia o jogo
+	
+@Código adaptado para leitura do botão
+readButton:
+        push	{lr}
+        ldr     r0, deviceAddr  		@ address of /dev/gpiomem
+        ldr     r1, openMode    		@ flags for accessing device
+        MOV R7, #5     
+        SWI 0
+        cmp     r0, #-1          		@ check for error
+        bne     gpioMemOK       		@ no error, continue
+        bl endGPIO
+        b main
+gpioMemOK:      
+        mov     r4, r0          		@ use r4 for file descriptor
+        ldr	r10, gpio			@ address of the GPIO
+        push	{r4, r10}
+        mov     r0, #NO_PREF     		@ let kernel pick memory
+        mov     r1, #PAGE_SIZE   		@ get 1 page of memory
+        mov     r2, #PROT_RDWR   		@ read/write this memory
+        mov     r3, #MAP_SHARED  		@ share with other processes
+        bl      mmap
+        pop	{r4, r10}
+        cmp     r0, #0          		@ check for error
+        bgt     mmapOK          		@ no error, continue
+        b main
+        
+mmapOK:        
+        mov     r10, r0          		@ use r5 for programming memory address
+        mov     r0, r10          		@ programming memory
+        mov     r1, r9       		@ button pin
+        mov     r2, #INPUT     			@ it's an input
+        bl      gpioPinFSelect  		@ select function        
+readPin:
+        mov 	r0, r10				@ GPIO programming memory
+        mov 	r1, r9			@ pin to read
+        bl 	gpioPinRead	
+        mov r9, r0
+        pop {lr}
+        bx lr
+
+        
+endGPIO: 
+        mov     r0, r4          		@ /dev/gpiomem file descriptor
+        MOV R7, #6
+        SWI 0               @Close
+        BX LR
+ 
+        .align  2
+
+deviceAddr:
+        .word   device        
+openMode:
+        .word   O_FLAGS
+gpio:
+        .word   PERIPH+GPIO_OFFSET
