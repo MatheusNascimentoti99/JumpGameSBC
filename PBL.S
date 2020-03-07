@@ -43,7 +43,9 @@
         .equ    PAGE_SIZE,4096  		@ Raspbian memory page
         .equ    INPUT,0         		@ use pin for input
         .equ    OUTPUT,1        		@ use pin for ouput
-        .equ    PIN_BTN,17        		@ button pin
+        .equ    PIN_BTN_Jump,27        		@ button pin Jump
+        .equ    PIN_BTN_Pause,17        		@ button pin Pause
+        
         
     zero: .ascii "0"
     um: .ascii "1"
@@ -106,13 +108,13 @@ main:
 
 home:
     LDR R5,=esp
-    LDR R4,=count
     MOV R12,#0
     MOV R8,#0
     LDR R0,=count 
     BL dbounce
-    LDR R9,=PIN_BTN
+    LDR R9,=PIN_BTN_Jump
     BL readButton
+    BL endGPIO
     CMP R9, #1
     BNE home
     BL dbounce
@@ -120,6 +122,7 @@ home:
     
 dbounce:
     PUSH {LR}
+    LDR R0,=count
     B wait
 wait:
     SUB R0, R0, #1
@@ -134,9 +137,15 @@ clearTest:
     
 game:
     LDR R11,=count
+    LDR R9,=PIN_BTN_Pause
+	BL readButton
+	BL endGPIO
+	CMP R0,#1
+	BEQ pauseGame
     B movingPerson
     
 gameplay:
+    ADD R12, R12, #1
 	LDR R10, =cenario
 	MOV R3,#16
 	B moveCen
@@ -181,11 +190,6 @@ swap:								@ Ele troca a primeira posição para a segunda posição
     STR R7, [R10, #0]
     STR R1, [R10, #4]
     SUB R3, R3, #1
-    LDR R1,=i
-    MOV R7, #4
-    MOV R0, #1
-    MOV R2, #1
-    SWI 0
     BX LR
 		
 delay:	
@@ -565,22 +569,26 @@ setColl14:
 	BL write
 	BL write
 	BL write
+	BL write
+	BL write
+	BL write
+	BL write
+	BL write
 	LDR LR,[sp]
 	ADD sp, sp, #8
 	BX LR
 
 @ Máquina de estados para verificar a colisão e movimentação do personagem
-
 movingPerson:
     BL score
-    ADD R12, R12, #1
-    LDR R9,=PIN_BTN
+    LDR R9,=PIN_BTN_Jump
 	BL readButton
+	BL endGPIO
 	LDR R10,=cenario
+	mov r0, #1
 	CMP R0,#1
 	BEQ buttonUp
 	B buttonDown					
-
 buttonDown:
 	LDR R1,=person		@R5 é o personagem
 	CMP R1, R5		@Verifica se o jogador está em cima do bloco
@@ -624,9 +632,27 @@ inUp:
 collider:
 	B main		@Reinicia o jogo
 	
+	
+pauseGame:
+    BL dbounce
+    LDR R9,=PIN_BTN_Jump
+    BL readButton
+    BL endGPIO
+	LDR R1,=i
+    MOV R7, #4
+    MOV R0, #1
+    MOV R2, #1
+    SWI 0
+    CMP R9,#1
+    BEQ returnGame
+	b pauseGame
+    
+returnGame:
+    b movingPerson
+    
 @Código adaptado para leitura do botão
 readButton:
-        push	{lr}
+        push	{r12, lr}
         ldr     r0, deviceAddr  		@ address of /dev/gpiomem
         ldr     r1, openMode    		@ flags for accessing device
         MOV R7, #5     
@@ -634,7 +660,8 @@ readButton:
         cmp     r0, #-1          		@ check for error
         bne     gpioMemOK       		@ no error, continue
         bl endGPIO
-        b main
+        pop {r12, lr}
+        b end
 gpioMemOK:      
         mov     r4, r0          		@ use r4 for file descriptor
         ldr	r10, gpio			@ address of the GPIO
@@ -647,7 +674,8 @@ gpioMemOK:
         pop	{r4, r10}
         cmp     r0, #0          		@ check for error
         bgt     mmapOK          		@ no error, continue
-        b main
+        pop {r12, lr}
+        b end
         
 mmapOK:        
         mov     r10, r0          		@ use r5 for programming memory address
@@ -660,14 +688,17 @@ readPin:
         mov 	r1, r9			@ pin to read
         bl 	gpioPinRead	
         mov r9, r0
-        pop {lr}
+        pop {r12, lr}
+        
         bx lr
 
         
 endGPIO: 
+        push    {r0}
         mov     r0, r4          		@ /dev/gpiomem file descriptor
         MOV R7, #6
         SWI 0               @Close
+        pop     {r0}
         BX LR
  
         .align  2
