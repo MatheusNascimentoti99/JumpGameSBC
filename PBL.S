@@ -225,6 +225,7 @@ set_position_DOWN:
     MOV R1, #10
     LDR R2,=x                       @x=1 que é a primeira linha
     SWI 0
+    BL close
     LDR LR, [sp]
     ADD sp, sp, #8
     BX LR
@@ -237,6 +238,7 @@ set_position_UP:
     MOV R1, #10
     LDR R2,=y                   @x=2 que é a segunda linha
     SWI 0
+    BL close
     LDR LR, [sp]
     ADD sp, sp, #8
     BX LR
@@ -244,16 +246,20 @@ set_position_UP:
     
 
 open:
+    push {R10}
     MOV R7, #5                  @ função open
     LDR R0, =filepath          @ file pointer 
     MOV R1, #0                  @Permissão de adm
     MOV R2, #00700              @flag
     SWI 0
+    MOV R10, R0
     BX LR
 
 close: 
+    MOV R0, R10
     MOV R7, #6
     SWI 0               @Close
+    POP {R10}
     BX LR
     
 
