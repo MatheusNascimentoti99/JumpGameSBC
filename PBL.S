@@ -583,10 +583,9 @@ movingPerson:
     BL score
     LDR R9,=PIN_BTN_Jump
 	BL readButton
-	BL endGPIO
 	LDR R10,=cenario
-	mov r0, #1
 	CMP R0,#1
+	BL endGPIO
 	BEQ buttonUp
 	B buttonDown					
 buttonDown:
