@@ -81,7 +81,7 @@
     P: .ascii "P"
     
     
-    person: .ascii "¥"
+    person: .ascii "£"
     bloco: .ascii "#"
     excl: .ascii "!"
     esp: .ascii " "
