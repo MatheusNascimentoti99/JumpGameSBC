@@ -12,39 +12,39 @@
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 .data
     
-@ button32.s
-@ Decrements a counter as a button connected to pin 17 is pressed.
-@ Prints the value of the counter on the screen till it reaches 0.
 
-@ Define my Raspberry Pi
+
+@ Definindo Raspberry Pi
         .cpu    cortex-a53
         .fpu    neon-fp-armv8
         .syntax unified         		@ modern syntax
 
-@ Constants for assembler
-        .equ    PERIPH,0x3f000000   		@ RPi 2 & 3 peripherals
-        .equ    GPIO_OFFSET,0x200000  		@ start of GPIO device
-@ The following are defined in /usr/include/asm-generic/fcntl.h:
-@ Note that the values are specified in octal.
-        .equ    O_RDWR,00000002   		@ open for read/write
+@ Constantes para assembler
+        .equ    PERIPH,0x3f000000   		@ RPi 2 & 3 periféricos
+        .equ    GPIO_OFFSET,0x200000  		@ start da GPIO 
+@ A seguir estão definidos em /usr/include/asm-generic/fcntl.h:
+@ Observe que os valores são especificados em octal.
+
+        .equ    O_RDWR,00000002   		@ abre para ler/escrever
         .equ    O_DSYNC,00010000
         .equ    __O_SYNC,04000000
         .equ    O_SYNC,__O_SYNC|O_DSYNC
 
-@ The following are defined in /usr/include/asm-generic/mman-common.h:
-        .equ    PROT_READ,0x1   		@ page can be read
-        .equ    PROT_WRITE,0x2  		@ page can be written
-        .equ    MAP_SHARED,0x01 		@ share changes
+@ A seguir estão definidos em /usr/include/asm-generic/mman-common.h:
+        .equ    PROT_READ,0x1   		@ página pode ser lida
+        .equ    PROT_WRITE,0x2  		@ página pode ser escrita
+        .equ    MAP_SHARED,0x01 		@ compartilhar alterações
 
-@ The following are defined by me:
-        .equ    O_FLAGS,O_RDWR|O_SYNC 	@ open file flags
+
+@ A seguir estão definidos:
+        .equ    O_FLAGS,O_RDWR|O_SYNC 	@ open flags
         .equ    PROT_RDWR,PROT_READ|PROT_WRITE
         .equ    NO_PREF,0
-        .equ    PAGE_SIZE,4096  		@ Raspbian memory page
-        .equ    INPUT,0         		@ use pin for input
-        .equ    OUTPUT,1        		@ use pin for ouput
-        .equ    PIN_BTN_Jump,27        		@ button pin Jump
-        .equ    PIN_BTN_Pause,17        		@ button pin Pause
+        .equ    PAGE_SIZE,4096  		@ Página de memoria
+        .equ    INPUT,0         		@ use pin para input
+        .equ    OUTPUT,1        		@ use pin para ouput
+        .equ    PIN_BTN_Jump,27        	@ button pin Jump
+        .equ    PIN_BTN_Pause,17        @ button pin Pause
         
         
     zero: .ascii "0"
@@ -663,34 +663,34 @@ readButton:
         MOV R7, #5     
         SWI 0
         cmp     r0, #-1          		@ check for error
-        bne     gpioMemOK       		@ no error, continue
+        bne     gpioMemOK       		@ sem erro, continue
         bl endGPIO
         pop {r12, lr}
         b end
 gpioMemOK:      
-        mov     r4, r0          		@ use r4 for file descriptor
-        ldr	r10, gpio			@ address of the GPIO
+        mov     r4, r0          		@ use r4 para file descriptor
+        ldr	r10, gpio			@ endereço GPIO
         push	{r4, r10}
         mov     r0, #NO_PREF     		@ let kernel pick memory
-        mov     r1, #PAGE_SIZE   		@ get 1 page of memory
-        mov     r2, #PROT_RDWR   		@ read/write this memory
-        mov     r3, #MAP_SHARED  		@ share with other processes
+        mov     r1, #PAGE_SIZE   		@ Pega a pagina de memoria
+        mov     r2, #PROT_RDWR   		@ read/write memoria
+        mov     r3, #MAP_SHARED  		@ compartilha com outro processo
         bl      mmap
         pop	{r4, r10}
-        cmp     r0, #0          		@ check for error
-        bgt     mmapOK          		@ no error, continue
+        cmp     r0, #0          		@ check  erro
+        bgt     mmapOK          		@ sem, continue
         pop {r12, lr}
         b end
         
 mmapOK:        
-        mov     r10, r0          		@ use r5 for programming memory address
-        mov     r0, r10          		@ programming memory
-        mov     r1, r9       		@ button pin
+        mov     r10, r0          		@ use r5 para endereçamento de memoria
+        mov     r0, r10          		@ programando a memomoria
+        mov     r1, r9       		   @ button pin
         mov     r2, #INPUT     			@ it's an input
-        bl      gpioPinFSelect  		@ select function        
+        bl      gpioPinFSelect  		@ seleciona função       
 readPin:
-        mov 	r0, r10				@ GPIO programming memory
-        mov 	r1, r9			@ pin to read
+        mov 	r0, r10				@ GPIO programando a memoria
+        mov 	r1, r9			@ pin para leitura
         bl 	gpioPinRead	
         mov r9, r0
         pop {r12, lr}
