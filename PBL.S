@@ -81,7 +81,7 @@
     P: .ascii "P"
     
     
-    person: .ascii "¥"
+    person: .ascii "£"
     bloco: .ascii "#"
     excl: .ascii "!"
     esp: .ascii " "
@@ -225,6 +225,7 @@ set_position_DOWN:
     MOV R1, #10
     LDR R2,=x                       @x=1 que é a primeira linha
     SWI 0
+    BL close
     LDR LR, [sp]
     ADD sp, sp, #8
     BX LR
@@ -237,6 +238,7 @@ set_position_UP:
     MOV R1, #10
     LDR R2,=y                   @x=2 que é a segunda linha
     SWI 0
+    BL close
     LDR LR, [sp]
     ADD sp, sp, #8
     BX LR
@@ -244,16 +246,20 @@ set_position_UP:
     
 
 open:
+    push {R10}
     MOV R7, #5                  @ função open
     LDR R0, =filepath          @ file pointer 
     MOV R1, #0                  @Permissão de adm
     MOV R2, #00700              @flag
     SWI 0
+    MOV R10, R0
     BX LR
 
 close: 
+    MOV R0, R10
     MOV R7, #6
     SWI 0               @Close
+    POP {R10}
     BX LR
     
 
@@ -583,10 +589,9 @@ movingPerson:
     BL score
     LDR R9,=PIN_BTN_Jump
 	BL readButton
-	BL endGPIO
 	LDR R10,=cenario
-	mov r0, #1
 	CMP R0,#1
+	BL endGPIO
 	BEQ buttonUp
 	B buttonDown					
 buttonDown:
