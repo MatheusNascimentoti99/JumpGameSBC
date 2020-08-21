@@ -1,8 +1,8 @@
-#Projeto desenvolvido para o problema 2 do MI - Sistemas Digitais
+# Projeto desenvolvido para o problema 2 do MI - Sistemas Digitais
 
-###Driver LCD16x2 utilizado: https://github.com/phanvandiem/LCD16x2_Driver
+### Driver LCD16x2 utilizado: https://github.com/phanvandiem/LCD16x2_Driver
 
-##Funções:
+## Funções:
 
 - write(char letra) - É utilizado o R9 como parâmetro. Sempre que chamar essa função deve-se atribuir a R9 o valor que deseja imprimir no LCD
 
